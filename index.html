@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Limit Gemini Usage — AI Quota Monitor</title>
+  <meta name="description" content="Liquid Glass × Material Design 3 PWA สำหรับติดตามโควตา Gemini รอบ 5 ชั่วโมง และขีดจำกัดรายสัปดาห์ พร้อมนับถอยหลังเวลา Reset แบบเรียลไทม์" />
+  <meta name="theme-color" content="#4F46E5" id="metaThemeColor" />
+
+  <!-- PWA & iOS Safari Meta Tags -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Gemini Usage" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- Ambient Liquid Glass Background Orbs -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <main class="app-shell">
+    <!-- Top App Bar -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <img src="./icons/icon-192.png" alt="Limit Gemini Usage Icon" class="brand-icon" width="44" height="44" />
+        <div class="brand-text">
+          <h1 class="app-title" id="appTitle">Limit Gemini Usage</h1>
+          <p class="app-status" id="appStatus">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">พร้อมติดตามโควตา</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="top-controls">
+        <button type="button" class="icon-pill" id="btnLangToggle" aria-label="Switch Language">
+          <span id="langLabel">TH</span>
+        </button>
+        <button type="button" class="icon-pill" id="btnThemeToggle" aria-label="Toggle Theme" title="Light / Dark">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- PWA Install Banner (Shown when installable or on iOS Safari) -->
+    <section class="install-banner glass-surface hidden" id="installBanner" aria-label="Install App">
+      <div class="install-banner-info">
+        <span class="install-badge" id="installBadge">PWA</span>
+        <div>
+          <p class="install-title" id="installBannerTitle">ติดตั้งแอปลงอุปกรณ์</p>
+          <p class="install-desc" id="installBannerDesc">เปิดใช้งานแบบเต็มจอและดูข้อมูลออฟไลน์ได้ทันที</p>
+        </div>
+      </div>
+      <div class="install-banner-actions">
+        <button type="button" class="pill-btn pill-primary pill-sm" id="btnInstallApp">ติดตั้งแอป</button>
+        <button type="button" class="pill-btn pill-tonal pill-sm" id="btnIosGuide">วิธีติดตั้ง iOS</button>
+      </div>
+    </section>
+
+    <!-- Main Liquid Glass Quota Card -->
+    <section class="glass-card" aria-label="Quota Overview">
+      <div class="card-header-row">
+        <span class="card-eyebrow" id="quotaOverviewLabel">สถานะโควตาปัจจุบัน</span>
+        <span class="offline-chip hidden" id="offlineChip">Offline</span>
+      </div>
+
+      <!-- 5-Hour Limit Block -->
+      <div class="quota-block" id="fiveHrBlock">
+        <div class="quota-row">
+          <div class="quota-meta">
+            <span class="quota-label" id="fiveHrLabel">รอบ 5 ชั่วโมง</span>
+            <div class="countdown-row">
+              <span class="countdown-prefix" id="fiveHrResetPrefix">รีเซ็ตใน</span>
+              <time class="countdown-value" id="fiveHrCountdown">--:--:--</time>
+            </div>
+          </div>
+          <div class="quota-pct-wrap">
+            <span class="quota-pct five-hr-accent" id="fiveHrPct">--%</span>
+            <span class="quota-badge hidden" id="fiveHrBadge"></span>
+          </div>
+        </div>
+        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="fiveHrTrack">
+          <div class="progress-fill five-hr-fill" id="fiveHrProgress" style="width: 0%;"></div>
+        </div>
+        <p class="reset-subtext" id="fiveHrSubtext">ยังไม่มีข้อมูล — กดซิงค์หรือกรอกค่าเพื่อเริ่มต้น</p>
+      </div>
+
+      <div class="glass-divider"></div>
+
+      <!-- Weekly Limit Block -->
+      <div class="quota-block" id="weeklyBlock">
+        <div class="quota-row">
+          <div class="quota-meta">
+            <span class="quota-label" id="weeklyLabel">ขีดจำกัดรายสัปดาห์</span>
+            <div class="countdown-row">
+              <span class="countdown-prefix" id="weeklyResetPrefix">รีเซ็ตใน</span>
+              <time class="countdown-value" id="weeklyCountdown">--:--:--</time>
+            </div>
+          </div>
+          <div class="quota-pct-wrap">
+            <span class="quota-pct weekly-accent" id="weeklyPct">--%</span>
+            <span class="quota-badge hidden" id="weeklyBadge"></span>
+          </div>
+        </div>
+        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="weeklyTrack">
+          <div class="progress-fill weekly-fill" id="weeklyProgress" style="width: 0%;"></div>
+        </div>
+        <p class="reset-subtext" id="weeklySubtext">ยังไม่มีข้อมูล — กดซิงค์หรือกรอกค่าเพื่อเริ่มต้น</p>
+      </div>
+    </section>
+
+    <!-- Primary Material 3 Capsule Action Buttons -->
+    <section class="action-grid" aria-label="Sync Actions">
+      <button type="button" class="pill-btn pill-primary" id="btnClipboardSync">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="2" width="6" height="4" rx="1"></rect>
+          <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"></path>
+          <path d="M9 14l2 2 4-4"></path>
+        </svg>
+        <span id="btnClipboardText">ซิงค์จากคลิปบอร์ด</span>
+      </button>
+
+      <button type="button" class="pill-btn pill-tonal" id="btnManualEdit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+        <span id="btnManualText">กรอก / แก้ไขค่า</span>
+      </button>
+
+      <button type="button" class="pill-btn pill-tonal" id="btnBookmarkletModal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span id="btnBookmarkletText">One-Tap Bookmarklet</span>
+      </button>
+
+      <a href="https://gemini.google.com/usage" target="_blank" rel="noopener noreferrer" class="pill-btn pill-tonal" id="btnOpenGemini">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+        <span id="btnOpenGeminiText">เปิดหน้า Gemini Usage</span>
+      </a>
+    </section>
+
+    <!-- Quick Install / iOS Footer Pill (always accessible) -->
+    <div class="quick-install-row" id="quickInstallRow">
+      <button type="button" class="text-link-btn" id="btnIosGuideInline">
+        <span id="iosGuideInlineText">วิธีติดตั้งบน iOS Safari</span>
+      </button>
+      <span class="dot-sep" aria-hidden="true">•</span>
+      <button type="button" class="text-link-btn" id="btnInstallInline">
+        <span id="installInlineText">ติดตั้งเป็นแอป (PWA)</span>
+      </button>
+    </div>
+
+    <!-- Recent Update History Card (100% localStorage) -->
+    <section class="glass-card history-card" aria-label="Recent Update History">
+      <div class="history-header">
+        <div>
+          <h2 class="section-title" id="historyTitle">ประวัติการอัปเดตล่าสุด</h2>
+          <p class="section-subtitle" id="historySubtitle">เก็บข้อมูลในอุปกรณ์ 100% (localStorage)</p>
+        </div>
+        <button type="button" class="pill-btn pill-tonal pill-xs" id="btnClearHistory">ล้างประวัติ</button>
+      </div>
+
+      <ul class="history-list" id="historyList">
+        <li class="history-empty" id="historyEmpty">ยังไม่มีประวัติการอัปเดต</li>
+      </ul>
+    </section>
+
+    <footer class="app-footer">
+      <p id="footerNote">Liquid Glass × Material Design 3 • Privacy-first 100% On-Device</p>
+    </footer>
+  </main>
+
+  <!-- Modal: Manual Edit -->
+  <div class="modal-backdrop hidden" id="modalManual" role="dialog" aria-modal="true" aria-labelledby="modalManualTitle">
+    <div class="modal-sheet glass-surface">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalManualTitle">กรอก / แก้ไขโควตา</h3>
+        <button type="button" class="modal-close" data-close="modalManual" aria-label="Close">&times;</button>
+      </div>
+      <form id="manualForm" class="modal-body">
+        <!-- 5-Hour Inputs -->
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="inputFivePct" id="labelManualFivePct">รอบ 5 ชั่วโมง (%)</label>
+            <span class="form-value-pill five-hr-accent" id="previewFivePct">0%</span>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="rangeFivePct" min="0" max="100" value="0" class="m3-slider five-hr-slider" />
+            <input type="number" id="inputFivePct" min="0" max="100" value="0" class="m3-input num-input" />
+          </div>
+          <label class="sub-label" id="labelManualFiveReset">เวลาที่เหลือจนถึง Reset (ชม. / นาที)</label>
+          <div class="duration-row">
+            <div class="duration-field">
+              <input type="number" id="inputFiveHours" min="0" max="5" value="5" class="m3-input" />
+              <span class="unit-label" data-i18n="unitHours">ชม.</span>
+            </div>
+            <div class="duration-field">
+              <input type="number" id="inputFiveMins" min="0" max="59" value="0" class="m3-input" />
+              <span class="unit-label" data-i18n="unitMins">นาที</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- Weekly Inputs -->
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="inputWeeklyPct" id="labelManualWeeklyPct">ขีดจำกัดรายสัปดาห์ (%)</label>
+            <span class="form-value-pill weekly-accent" id="previewWeeklyPct">0%</span>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="rangeWeeklyPct" min="0" max="100" value="0" class="m3-slider weekly-slider" />
+            <input type="number" id="inputWeeklyPct" min="0" max="100" value="0" class="m3-input num-input" />
+          </div>
+          <label class="sub-label" id="labelManualWeeklyReset">เวลาที่เหลือจนถึง Reset (วัน / ชม. / นาที)</label>
+          <div class="duration-row">
+            <div class="duration-field">
+              <input type="number" id="inputWeeklyDays" min="0" max="7" value="7" class="m3-input" />
+              <span class="unit-label" data-i18n="unitDays">วัน</span>
+            </div>
+            <div class="duration-field">
+              <input type="number" id="inputWeeklyHours" min="0" max="23" value="0" class="m3-input" />
+              <span class="unit-label" data-i18n="unitHours">ชม.</span>
+            </div>
+            <div class="duration-field">
+              <input type="number" id="inputWeeklyMins" min="0" max="59" value="0" class="m3-input" />
+              <span class="unit-label" data-i18n="unitMins">นาที</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="pill-btn pill-tonal" data-close="modalManual" id="btnCancelManual">ยกเลิก</button>
+          <button type="submit" class="pill-btn pill-primary" id="btnSaveManual">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Paste Fallback -->
+  <div class="modal-backdrop hidden" id="modalPaste" role="dialog" aria-modal="true" aria-labelledby="modalPasteTitle">
+    <div class="modal-sheet glass-surface">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalPasteTitle">วางข้อความจากหน้า Gemini Usage</h3>
+        <button type="button" class="modal-close" data-close="modalPaste" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc" id="modalPasteDesc">คัดลอกข้อความทั้งหมดจากหน้า gemini.google.com/usage แล้ววางลงในช่องด้านล่างเพื่อวิเคราะห์อัตโนมัติ</p>
+        <textarea id="pasteTextarea" class="m3-textarea" rows="6" placeholder="ตัวอย่าง: รอบ 5 ชั่วโมง 35% รีเซ็ตใน 3 ชม. 20 นาที..."></textarea>
+        <div class="modal-actions">
+          <button type="button" class="pill-btn pill-tonal" data-close="modalPaste" id="btnCancelPaste">ยกเลิก</button>
+          <button type="button" class="pill-btn pill-primary" id="btnParsePaste">วิเคราะห์และบันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: One-Tap Bookmarklet -->
+  <div class="modal-backdrop hidden" id="modalBookmarklet" role="dialog" aria-modal="true" aria-labelledby="modalBookmarkletTitle">
+    <div class="modal-sheet glass-surface">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalBookmarkletTitle">One-Tap Bookmarklet</h3>
+        <button type="button" class="modal-close" data-close="modalBookmarklet" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc" id="bookmarkletDesc">ลากปุ่มด้านล่างไปวางบนแถบ Bookmark ของเบราว์เซอร์ (หรือคัดลอกโค้ดไปสร้าง Bookmark บนมือถือ) จากนั้นเมื่อเปิดหน้า gemini.google.com/usage ให้กด Bookmark นี้เพื่อซิงค์ค่ากลับมาทันที</p>
+
+        <div class="bookmarklet-box">
+          <a href="#" id="bookmarkletLink" class="pill-btn pill-primary bookmarklet-drag" title="Drag to Bookmarks Bar">
+            ⚡ Sync Gemini Usage
+          </a>
+        </div>
+
+        <div class="code-preview-wrap">
+          <textarea id="bookmarkletCode" class="m3-textarea code-textarea" rows="4" readonly></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="pill-btn pill-tonal" data-close="modalBookmarklet" id="btnCloseBookmarklet">ปิด</button>
+          <button type="button" class="pill-btn pill-primary" id="btnCopyBookmarklet">คัดลอกโค้ด Bookmarklet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: iOS Safari Install Guide -->
+  <div class="modal-backdrop hidden" id="modalIos" role="dialog" aria-modal="true" aria-labelledby="modalIosTitle">
+    <div class="modal-sheet glass-surface">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalIosTitle">วิธีติดตั้งบน iOS Safari</h3>
+        <button type="button" class="modal-close" data-close="modalIos" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ol class="ios-steps">
+          <li>
+            <span class="step-num">1</span>
+            <span id="iosStep1">เปิดเว็บไซต์นี้ด้วยเบราว์เซอร์ <strong>Safari</strong> บน iPhone หรือ iPad</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span id="iosStep2">แตะปุ่ม <strong>แชร์ (Share)</strong> ไอคอนสี่เหลี่ยมมีลูกศรชี้ขึ้นบริเวณแถบด้านล่าง</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span id="iosStep3">เลื่อนลงแล้วเลือก <strong>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong></span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span id="iosStep4">กด <strong>เพิ่ม (Add)</strong> ที่มุมขวาบน เพื่อใช้งานแบบเต็มจอเหมือนแอป Native</span>
+          </li>
+        </ol>
+        <div class="modal-actions">
+          <button type="button" class="pill-btn pill-primary" data-close="modalIos" id="btnCloseIos">เข้าใจแล้ว</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
